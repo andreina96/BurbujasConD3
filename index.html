@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset = "utf-8">
+		<!--link href="css.css" rel="stylesheet" type="text/css">-->
+		<script src = "https://d3js.org/d3.v4.min.js"></script>
+		<script>
+			/* Función para crear el cuadro que imprime los círculos */
+			function cuadro(data){
+				/* Se realiza una selección de la etiqueta body y se le agrega dentro la etiqueta div con id = chart */
+				d3.select("#wrapper").append("div")
+					.attr("id", "chart")
+					.style("float", "right");
+				
+				/* Se asigna a la variable items, los datos en el campo values de la variable data */
+				var items = data.values;
+				
+				/* Se realiza una ordenación en el arreglo items */
+				items.sort(function (a,b){ return b.usage - a.usage; });
+				
+				/* Se declaran las variables width y height */
+				var width = 1000, height = 500;			 
+	
+				/* Se asignan estilos a la etiqueta div.chart */
+				var containerDiv = d3.select("#chart")
+					.style("position", "relative")
+					.style("width", width + "px")
+					.style("height", height + "px")
+					.style("padding", 0)
+					.style("background-color", "#eeeeec");
+				
+				/* Se crea una escala de colores para cada uno de los elementos con nombre igual en la variable data */
+				var browserList = items.map(function(d){ return d.name; });
+				browserNames = d3.set(browserList).values(),
+				cScale = d3.scaleOrdinal()
+					.domain(browserNames)
+					.range(["#FF530D", "green", "blue", "brown", "yellow", "#E80C7A", 
+					        "#FF0DFF", "#00FF48", "#F96CFF", "#AB00B2", "#9AC5FF"]);
+				
+				/* Se crea una escala de radios para cada uno de los elementos de acuerdo al uso en la variable data */
+				var radiusExtent = [10, 30],
+				rScale = d3.scaleOrdinal()
+					.domain(d3.extent(items, function(d){ return d.usage; }))
+					.range(radiusExtent);
+				
+				/* Se iguala el campo r de cada elemento de la variable data, a un valor en la escala de radios */
+				items.forEach(function(d){
+					d.r = rScale(d.usage);
+				});
+				
+				/* Se crea un div.bubble para cada elemento en la variable data */
+				var bubbleDivs = containerDiv.selectAll("div.bubble")
+					.data(items)
+					.enter()
+					.append("div")
+					.attr("class", "bubble")
+					.style("position", "absolute")
+					.style("width", "10px")
+					.style("height", "10px")
+					.style("border-radius", function(d){ return d.r + "px"; })
+					.style("width", function(d){ return (2 * d.r) + "px"; })
+					.style("height", function(d){ return (2 * d.r) + "px"; })
+					.style("background-color", function(d){ return cScale(d.name)})
+					.style("border", "2.5px solid black");
+				
+				/* Se crea la variable force para distribuir los elementos,
+				   force agrega campos para cada uno de los nodos (items), algunos son:
+						- x
+						- y
+						- r*/
+				
+				var force = d3.forceSimulation(items)
+					.force("x", function(d){ return (d.x - d.r) + "px"; })
+					.force("y", function(d){ return (d.y - d.r) + "px"; })
+					.force("center", d3.forceCenter(width / 2, height / 2))
+					.force("charge", d3.forceManyBody().strength(-15));	
+				
+				/* Se especifica la posición para cada uno de los elementos de la variable data */
+				force.on("tick", function(){
+					bubbleDivs
+						.style("top", function(d){ return (d.y - d.r) + "px"; })
+						.style("left", function(d){ return (d.x - d.r) + "px"; });
+				});
+				
+				d3.select("#wrapper").append("div")
+					.attr("id", "legend")
+					.attr("float", "left");
+				
+				var legendDiv = d3.select("#legend");
+				
+				var pLegend = legendDiv.selectAll("p.legend-title").data(browserNames).enter().append("p")
+					.attr("class", "legend-title");
+					
+				pLegend.append("span")
+					.style("color", cScale)
+					.style("background", cScale)
+					.text("..");
+					
+				pLegend.append("text").text(function(d){ return "  " + d; });
+			};
+		</script>
+	</head>
+	<body>
+		<script>
+			d3.select("body").append("div")
+				.attr("id" ,"wrapper")
+				.style("overflow", "hidden");
+		
+			/* Datos para el ejemplo */
+			data = {
+				"name": "Browser Market",
+				"values": [
+					{ "name": "Internet Explorer","version": 8,"platform": "desktop","usage": 8.31,"current": "false" },
+					{ "name": "Internet Explorer","version": 9,"platform": "desktop","usage": 5.21,"current": "false" },
+					{ "name": "Internet Explorer","version": 10,"platform": "desktop","usage": 10.79,"current": "false" },
+					{ "name": "Internet Explorer","version": 11,"platform": "desktop","usage": 0.11,"current": "true" },
+					{ "name": "Firefox","version": 23,"platform": "desktop","usage": 0.91,"current": "false" },
+					{ "name": "Firefox","version": 24,"platform": "desktop","usage": 11.03,"current": "false" },
+					{ "name": "Firefox","version": 25,"platform": "desktop","usage": 0.53,"current": "true" },
+					{ "name": "Firefox","version": 26,"platform": "desktop","usage": 0.02,"current": "false" },
+					{ "name": "Firefox","version": 27,"platform": "desktop","usage": 0.02,"current": "false" },
+					{ "name": "Chrome","version": 29,"platform": "desktop","usage": 5.08,"current": "false" },
+					{ "name": "Chrome","version": 30,"platform": "desktop","usage": 24.61,"current": "false" },
+					{ "name": "Chrome","version": 31,"platform": "desktop","usage": 0.16,"current": "true" },
+					{ "name": "Chrome","version": 32,"platform": "desktop","usage": 0.06,"current": "false" },
+					{ "name": "Safari","version": 5.1,"platform": "desktop","usage": 1.28,"current": "false" },
+					{ "name": "Safari","version": 6,"platform": "desktop","usage": 2.05,"current": "false" },
+					{ "name": "Safari","version": 7,"platform": "desktop","usage": 0.16,"current": "true" },
+					{ "name": "Opera","version": 17,"platform": "desktop","usage": 0.16,"current": "true" },
+					{ "name": "iOS Safari","version": 4.0,"platform": "mobile","usage": 0.01,"current": "false" },
+					{ "name": "iOS Safari","version": 4.2,"platform": "mobile","usage": 0.03,"current": "false" },
+					{ "name": "iOS Safari","version": 5.0,"platform": "mobile","usage": 0.28,"current": "false" },
+					{ "name": "iOS Safari","version": 6.0,"platform": "mobile","usage": 1.16,"current": "false" },
+					{ "name": "iOS Safari","version": 7.0,"platform": "mobile","usage": 2.52,"current": "true" },
+					{ "name": "Opera Mini","version": 7.0,"platform": "mobile","usage": 4.58,"current": "true" },
+					{ "name": "Android Browser","version": 2.3,"platform": "mobile","usage": 1.44,"current": "false" },
+					{ "name": "Android Browser","version": 3.0,"platform": "mobile","usage": 0.01,"current": "false" },
+					{ "name": "Android Browser","version": 4.0,"platform": "mobile","usage": 0.99,"current": "false" },
+					{ "name": "Android Browser","version": 4.1,"platform": "mobile","usage": 1.87,"current": "false" },
+					{ "name": "Android Browser","version": 4.3,"platform": "mobile","usage": 0.74,"current": "true" },
+					{ "name": "Blackberry Browser","version": 7,"platform": "mobile","usage": 0.14,"current": "true" },
+					{ "name": "Internet Explorer Mobile","version": 10,"platform": "mobile","usage": 0.21,"current": "true"}
+				]
+			}
+				
+			/* Se invoca a la función draw(data) con la variable "data" */
+			d3.json(data, cuadro(data));
+		</script>
+	</body>
+</html>
